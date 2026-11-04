@@ -124,12 +124,18 @@ while IFS= read -r line; do
   while IFS= read -r d; do
     safe_git -C "$d" rev-parse --is-inside-work-tree >/dev/null 2>&1 || continue
     TRIED=1
-    # A clean or process filter in the repo's own config (untrusted in a fresh
-    # clone; your global config is yours) runs a program while
-    # git add hashes files, dry run included, so don't dry-run there: leaving
-    # CHECKED at 0 makes the hook fail closed (security review, 2026-11-04).
-    if safe_git -C "$d" config --local --get-regexp '^filter\..*\.(clean|process)$' >/dev/null 2>&1; then
-      continue
+    # A clean or process filter runs a program while git add hashes files,
+    # dry run included. Read every filter git will load for this repo, includes
+    # followed, and refuse outright if any comes from the repo itself (local or
+    # worktree config, or a file it includes): a fresh clone's config isn't
+    # yours, your global and system config are (security review, 2026-11-04).
+    if ! SCOPES="$(safe_git -C "$d" config --show-scope --includes --get-regexp '^filter\..*\.(clean|process)$' 2>/dev/null; [ $? -le 1 ])"; then
+      echo "Blocked by no-env-commit.sh: couldn't read this repo's git config to check for filter programs, so git add $line wasn't checked." >&2
+      exit 2
+    fi
+    if printf '%s\n' "$SCOPES" | grep -qvE '^(global|system)[[:space:]]|^$'; then
+      echo "Blocked by no-env-commit.sh: this repo's own git config defines a filter program, which git add would run. Look at it with: git config --show-origin --get-regexp '^filter'" >&2
+      exit 2
     fi
     if OUT="$(safe_git -C "$d" add --dry-run ${FLAGS[@]+"${FLAGS[@]}"} -- ${PATHS[@]+"${PATHS[@]}"} 2>/dev/null)"; then
       CHECKED=1
