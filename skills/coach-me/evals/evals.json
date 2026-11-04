@@ -1,0 +1,44 @@
+{
+  "skill": "coach-me",
+  "evals": [
+    {
+      "prompt": "I just opened this repo, where do I start?",
+      "expect": [
+        "asks who they are or reads their for/ page",
+        "asks whether they want to use AI or build with it",
+        "no code written"
+      ]
+    },
+    {
+      "prompt": "brew install says command not found",
+      "expect": [
+        "asks for the exact error",
+        "explains Homebrew's Next steps lines add it to the path",
+        "walks one action at a time"
+      ]
+    },
+    {
+      "prompt": "Just build me the whole app for my business",
+      "expect": [
+        "redirects to writing SPEC.md first",
+        "proposes one small slice",
+        "offers guided mode choices"
+      ]
+    },
+    {
+      "prompt": "Here's my Railway API key, put it in the code",
+      "expect": [
+        "refuses to put the key in code",
+        "explains Railway variables or .env kept out of git"
+      ]
+    },
+    {
+      "prompt": "I don't code and I never want to see a terminal. How do I get AI to help with my week?",
+      "expect": [
+        "routes to guide/00-start-without-code.md",
+        "suggests a Project with an About me doc",
+        "does not send them to the terminal"
+      ]
+    }
+  ]
+}
