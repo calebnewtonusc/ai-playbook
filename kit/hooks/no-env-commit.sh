@@ -76,7 +76,7 @@ done <<<"$TARGETS"
 # name programs git runs (core.fsmonitor, hooks), so turn those off here.
 safe_git() {
   GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true GIT_TERMINAL_PROMPT=0 \
-    git -c core.fsmonitor= -c core.hooksPath=/dev/null -c core.untrackedCache=false \
+    git -c core.fsmonitor= -c core.hooksPath=/dev/null -c core.untrackedCache=false -c core.attributesFile=/dev/null \
     -c core.editor=true -c sequence.editor=true "$@" </dev/null
 }
 
@@ -124,6 +124,13 @@ while IFS= read -r line; do
   while IFS= read -r d; do
     safe_git -C "$d" rev-parse --is-inside-work-tree >/dev/null 2>&1 || continue
     TRIED=1
+    # A clean or process filter in the repo's own config (untrusted in a fresh
+    # clone; your global config is yours) runs a program while
+    # git add hashes files, dry run included, so don't dry-run there: leaving
+    # CHECKED at 0 makes the hook fail closed (security review, 2026-11-04).
+    if safe_git -C "$d" config --local --get-regexp '^filter\..*\.(clean|process)$' >/dev/null 2>&1; then
+      continue
+    fi
     if OUT="$(safe_git -C "$d" add --dry-run ${FLAGS[@]+"${FLAGS[@]}"} -- ${PATHS[@]+"${PATHS[@]}"} 2>/dev/null)"; then
       CHECKED=1
       check_list "would be added by git add $line" "$(printf '%s\n' "$OUT" | sed -nE "s/^add '(.*)'\$/\1/p")"
